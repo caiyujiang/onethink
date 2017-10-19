@@ -43,7 +43,7 @@ class WebserviceController extends Controller {
      * ip访问限制检测
      */
     private function checkIp(){
-        $ip = getiip();
+        $ip = $this->getip();
         $arrLimit = C('WEBSERVICE_LIMIT');//see Conf/config.php
         $arrIpLimit = $arrLimit['ips'];
         if(!in_array($ip, $arrIpLimit)){
@@ -62,5 +62,46 @@ class WebserviceController extends Controller {
             header("HTTP/1.0 401 model denied !");
             exit;
         }
+    }
+
+    /**
+     * 获取客户端 ip 地址
+     * @access public
+     * @return string
+    */
+    private function getip() {
+        if (isset($_SERVER)) {
+            if (isset($_SERVER["HTTP_X_FORWARDED_FOR"])) {
+                $realip = $_SERVER["HTTP_X_FORWARDED_FOR"];
+            } elseif (isset($_SERVER["HTTP_CLIENT_IP"])) {
+                $realip = $_SERVER["HTTP_CLIENT_IP"];
+            } else {
+                $realip = $_SERVER["REMOTE_ADDR"];
+            }
+            if($realip == '127.0.0.1' && isset($_SERVER["HTTP_X_REAL_IP"])) {
+                $realip = $_SERVER["HTTP_X_REAL_IP"];
+            }
+        } else {
+            if (getenv('HTTP_X_FORWARDED_FOR')) {
+                $realip = getenv('HTTP_X_FORWARDED_FOR');
+            } elseif (getenv('HTTP_CLIENT_IP')) {
+                $realip = getenv('HTTP_CLIENT_IP');
+            } else {
+                $realip = getenv('REMOTE_ADDR');
+            }
+            if($realip == '127.0.0.1' && getenv('HTTP_X_REAL_IP')) {
+                $realip = getenv('HTTP_X_REAL_IP');
+            }
+        }
+        
+        return $this->checkip($realip);
+    }
+
+    private function checkip($ip){
+        $ip = addslashes($ip);
+        if(!preg_match("/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/", $ip)) {
+            return '';
+        }   
+        return $ip;
     }
 }
